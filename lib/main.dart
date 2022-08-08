@@ -1,27 +1,51 @@
-import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:tracker_app/auth/ui/pages/login_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutterfire_ui/auth.dart';
+
 import 'firebase_options.dart';
 
+
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    const providerConfigs = [EmailProviderConfiguration()];
+
     return MaterialApp(
-      title: 'Tracker App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const LoginPage(),
+      initialRoute:
+          FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/profile',
+      routes: {
+        '/sign-in': (context) {
+          return SignInScreen(
+            providerConfigs: providerConfigs,
+            actions: [
+              AuthStateChangeAction<SignedIn>((context, state) {
+                Navigator.pushReplacementNamed(context, '/profile');
+              }),
+            ],
+          );
+        },
+        '/profile': (context) {
+          return ProfileScreen(
+            providerConfigs: providerConfigs,
+            actions: [
+              SignedOutAction((context) {
+                Navigator.pushReplacementNamed(context, '/sign-in');
+              }),
+            ],
+          );
+        },
+      },
     );
   }
 }
