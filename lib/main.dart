@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterfire_ui/auth.dart';
 import 'package:geolocator/geolocator.dart';
@@ -24,6 +25,18 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Position? _position;
 
+  _saveLocation(User user, Position position) async {
+    DatabaseReference ref = FirebaseDatabase.instance.ref("locations").push();
+    await ref.set({
+      "time_stamp": DateTime.now().toUtc().toIso8601String(),
+      "uid": user.uid,
+      "name": user.displayName,
+      "email": user.email,
+      "latitude": position.latitude,
+      "longitude": position.longitude,
+    });
+  }
+
   Future<Position> _determinePosition() async {
     LocationPermission permission;
     permission = await Geolocator.checkPermission();
@@ -44,11 +57,15 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _determinePosition().then((value) {
-      setState(() {
-        _position = value;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _determinePosition().then((value) {
+        _saveLocation(user, value);
+        setState(() {
+          _position = value;
+        });
       });
-    });
+    }
   }
 
   @override
@@ -71,20 +88,46 @@ class _MyAppState extends State<MyApp> {
         },
         '/home': (context) {
           return Scaffold(
-            appBar: AppBar(title: const Text("Tracker")),
+            appBar: AppBar(
+              title: const Text("Tracker"),
+              actions: [
+                IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/profile');
+                    },
+                    icon: const Icon(
+                      Icons.person_outline_rounded,
+                      color: Colors.white,
+                    ))
+              ],
+            ),
             body: Center(
               child: Text("${_position?.latitude} ${_position?.longitude}"),
             ),
             floatingActionButton: FloatingActionButton(
               child: const Icon(Icons.my_location),
               onPressed: () {
-                _determinePosition().then((value) {
-                  setState(() {
-                    _position = value;
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  _determinePosition().then((value) {
+                    _saveLocation(user, value);
+                    setState(() {
+                      _position = value;
+                    });
                   });
-                });
+                }
               },
             ),
+          );
+        },
+        '/profile': (context) {
+          return ProfileScreen(
+            providerConfigs: providerConfigs,
+            actions: [
+              SignedOutAction((context) {
+                Navigator.pushReplacementNamed(context, '/sign-in');
+              }),
+            ],
           );
         },
       },
