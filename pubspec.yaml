@@ -33,6 +33,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutterfire_ui: ^0.4.3+4
+  geolocator: ^9.0.1
   getxbottombar: ^0.0.1
 
 dev_dependencies:
