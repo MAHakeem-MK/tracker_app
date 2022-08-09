@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutterfire_ui/auth.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -24,6 +25,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Position? _position;
+  String _barcodeInfo = "";
 
   _saveLocation(User user, Position position) async {
     DatabaseReference ref = FirebaseDatabase.instance.ref("locations").push();
@@ -52,6 +54,15 @@ class _MyAppState extends State<MyApp> {
           'Location permissions are permanently denied, we cannot request permissions.');
     }
     return await Geolocator.getCurrentPosition();
+  }
+
+  Future<String> _scanbarcode() {
+    return FlutterBarcodeScanner.scanBarcode(
+      '#ff6666',
+      "Cancel",
+      true,
+      ScanMode.BARCODE,
+    );
   }
 
   @override
@@ -102,21 +113,42 @@ class _MyAppState extends State<MyApp> {
               ],
             ),
             body: Center(
-              child: Text("${_position?.latitude} ${_position?.longitude}"),
+              child: Column(
+                children: [
+                  Text(_barcodeInfo),
+                  Text("${_position?.latitude} ${_position?.longitude}"),
+                ],
+              ),
             ),
-            floatingActionButton: FloatingActionButton(
-              child: const Icon(Icons.my_location),
-              onPressed: () {
-                final user = FirebaseAuth.instance.currentUser;
-                if (user != null) {
-                  _determinePosition().then((value) {
-                    _saveLocation(user, value);
+            floatingActionButton: Row(
+              children: [
+                FloatingActionButton(
+                  child: const Icon(Icons.camera),
+                  onPressed: () {
                     setState(() {
-                      _position = value;
+                      _scanbarcode().then((value) {
+                        setState(() {
+                          _barcodeInfo = value;
+                        });
+                      });
                     });
-                  });
-                }
-              },
+                  },
+                ),
+                FloatingActionButton(
+                  child: const Icon(Icons.my_location),
+                  onPressed: () {
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      _determinePosition().then((value) {
+                        _saveLocation(user, value);
+                        setState(() {
+                          _position = value;
+                        });
+                      });
+                    }
+                  },
+                ),
+              ],
             ),
           );
         },
