@@ -35,6 +35,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_barcode_scanner: ^2.0.0
+  flutter_foreground_task: ^3.8.1
   flutterfire_ui: ^0.4.3+4
   geolocator: ^9.0.1
 
