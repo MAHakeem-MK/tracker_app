@@ -1,7 +1,10 @@
 import 'dart:isolate';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:tracker_app/models/user_barcode.dart';
+import 'package:tracker_app/utils/save_barcode.dart';
 
 import '../utils/background_location_tracker.dart';
 import '../utils/scan_barcode.dart';
@@ -180,6 +183,17 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 _barcodeInfo = value;
               });
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                final userBarcode = UserBarcode(
+                  userId: user.uid,
+                  timeStamp: DateTime.now().toUtc(),
+                  userName: user.displayName ?? "",
+                  userEmail: user.email ?? "",
+                  barcode: _barcodeInfo,
+                );
+                saveBarcode(userBarcode);
+              }
             });
           });
         },
